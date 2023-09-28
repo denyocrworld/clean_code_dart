@@ -1,6 +1,7 @@
 Tujuan utama dari Clean Code adalah meningkatkan kualitas perangkat lunak dengan cara membuat kode yang mudah dimengerti, mudah dikelola, dan mudah untuk dikembangkan dan diperbaiki. Dengan menerapkan prinsip-prinsip kode bersih, pengembang dapat mengurangi kompleksitas, meningkatkan keandalan, dan memudahkan kolaborasi dalam tim pengembangan, hasilnya adalah perangkat lunak yang lebih efisien, lebih mudah dipelihara, dan lebih dapat diandalkan.
 
 **DAFTAR ISI**
+
 **[BAB 1: Pengenalan Kode Bersih dalam Aplikasi Dart](/clean_code/BAB1.md)**
 
 **[BAB 2: Nama-nama Variabel, Fungsi, dan Kelas yang Bermakna](/clean_code/BAB2.md)**
