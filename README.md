@@ -2,7 +2,7 @@ Tujuan utama dari Clean Code adalah meningkatkan kualitas perangkat lunak dengan
 
 **DAFTAR ISI**
 
-**[BAB 1: Pengenalan Kode Bersih dalam Aplikasi Dart](sandbox:/clean_code/BAB1.md)**
+**<a href="/clean_code/BAB1.md">BAB 1: Pengenalan Kode Bersih dalam Aplikasi Dart</a>**
 
 **[BAB 2: Nama-nama Variabel, Fungsi, dan Kelas yang Bermakna](sandbox:/clean_code/BAB2.md)**
 
