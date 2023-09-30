@@ -2,6 +2,23 @@ Baik, mari kita lakukan perubahan tersebut.
 
 **Tutorial Laravel: Migrasi dan CRUD untuk Tabel `user_tokens`**
 
+**0. Ambil credentials.json**
+- Buka project Firebase, masuk ke Project Settings.
+- Klik tab <b>Cloud Messaging</b>
+- Pilih <b>Manage Service Accounts</b>
+- Klik <b>Create Service Account</b>
+- Isi *Service Account Name* dan klik <b>Create and Continue</b>
+- Klik <b>Done</b>
+- Klik Service Account yang baru saja dibuat
+- Klik tab <b>Keys</b>
+- Klik <b>ADD KEY</b>
+- Klik <b>Create new key</b>
+- Pilih <b>JSON</b>
+- Secara otomatis itu akan mendownload file.json
+- Copy file itu dan letakkan di root project Laravel
+- Rename jadi <b>credentials.json</b>
+- Seharusnya file ini satu level dengan composer.json
+
 **1. Migrasi Tabel `user_tokens`**
 Buat migrasi untuk tabel `user_tokens`:
 ```bash
