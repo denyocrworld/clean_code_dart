@@ -1,183 +1,300 @@
-Tutorial Flutter LocalNotification dengan Firebase Cloud Messaging (FCM)
-Packages:
-https://pub.dev/packages/alarm
-https://pub.dev/packages/flutter_local_notifications
-Create flutter projects
+**Tutorial Laravel: Membuat CRUD API untuk Users dan Products**
 
-mkdir tutorial_notifications
-cd tutorial_notifications
-flutter create .
-2. Atur android/app/build.gradle menjadi:
-compileSdkVersion 33
-minSdkVersion 26
-targetSdkVersion 33
-3. Tambahkan package ini:
-flutter pub add flutter_local_notifications firebase_core firebase_auth firebase_messaging
-4. Tambahkan file app_icon.png ke lokasi ini:
-android/app/src/main/res/drawable/app_icon.png
-Silahkan gunakan gambarmu sendiri.
-Atau download salah satu icon disini:
-https://www.iconarchive.com/tag/owl
-Bisa juga dengan menjalankan perintah CURL ini utk icon sementara:
-curl https://i.ibb.co/vPQfPDJ/app-icon.png -o android/app/src/main/res/drawable/app_icon.png
-5. Next, ubah AndroidManifest.xml, di lokasi ini:
-android/app/src/main/AndroidManifest.xml
-Tambahkan kode ini sebelum tag <application> </application>
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.VIBRATE" />
-<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-6. Masih di AndroidManifest.xml, tambahkan kode ini diantara <application> dan </application>
-<service
-    android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmService"
-    android:permission="android.permission.BIND_JOB_SERVICE"
-    android:exported="false"/>
-<receiver
-    android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmBroadcastReceiver"
-    android:exported="false"/>
-<receiver
-    android:name="dev.fluttercommunity.plus.androidalarmmanager.RebootBroadcastReceiver"
-    android:enabled="false"
-    android:exported="false">
-    <intent-filter>
-        <action android:name="android.intent.action.BOOT_COMPLETED" />
-    </intent-filter>
-</receiver>
-7. Setup Firebase sampai Terhubung:
-Ikuti panduan disini:
-https://medium.com/@denyocr.world/step-by-step-cara-setup-flutter-firebase-713f9187262b
-Atau jika kamu sudah paham,
-Langsung saja eksekusi:
-flutterfire configure
-Lanjutkan sampai project Flutter terhubung dengan Firebase.
-Ditandai dengan kamu sudah mengatur file main.dart
-import 'firebase_options.dart';
-//...
+**1. Membuat Database di MySQL**
+Buka MySQL console:
+```bash
+mysql -u root
+```
+Buat database:
+```sql
+CREATE DATABASE laravel_db;
+EXIT;
+```
 
-void main() async {
-  //----------------
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  //----------------
-  runApp(const MyApp());
+**2. Membuat Project Laravel**
+```bash
+composer create-project --prefer-dist laravel/laravel laravel_project
+cd laravel_project
+```
+
+**3. Konfigurasi .env**
+Buka file `.env` dan konfigurasikan database:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+**4. Migrasi Tabel Users dengan Kolom Role**
+```bash
+php artisan make:migration add_role_to_users_table
+```
+Buka file migrasi yang baru saja dibuat di `database/migrations/`:
+```php
+public function up()
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('role')->default('admin');
+    });
 }
-8. Buat file ini:
-lib/service/notification_service/notification_service.dart
-Isi dengan kode ini:
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../../firebase_options.dart';
+```
+Lakukan migrasi:
+```bash
+php artisan migrate
+```
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print('Handling a background message ${message.messageId}');
-}
+**5. Membuat CRUD Users di Controller**
+```bash
+php artisan make:controller UserController
+```
+Buka `app/Http/Controllers/UserController.php`:
+```php
+<?php
 
-class NotificationService {
-  static late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-  static late AndroidNotificationChannel channel;
-  static bool isFlutterLocalNotificationsInitialized = false;
+namespace App\Http\Controllers;
 
-  initNotifications() async {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    FirebaseMessaging.onMessage.listen(showFlutterNotification);
-    if (!kIsWeb) {
-      await setupFlutterNotifications();
+use Illuminate\Http\Request;
+use App\Models\User;
+
+class UserController extends Controller
+{
+    public function index(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'asc');
+        $limit = $request->input('limit', 10);
+
+        $users = User::when($search, function ($query, $search) {
+            return $query->where('name', 'like', "%$search%");
+        })->orderBy($sort, $order)->paginate($limit);
+
+        return response(['data' => $users], 200);
     }
-  }
 
-  Future<String?> getToken() async {
-    String? token = await FirebaseMessaging.instance.getToken(
-        vapidKey:
-            'BNKkaUWxyP_yC_lki1kYazgca0TNhuzt2drsOrL6WrgGbqnMnr8ZMLzg_rSPDm6HKphABS0KzjPfSqCXHXEd06Y');
-
-    print("FCM Token: $token");
-    return token;
-  }
-
-  Future<void> setupFlutterNotifications() async {
-    if (isFlutterLocalNotificationsInitialized) {
-      return;
+    public function store(Request $request)
+    {
+        $user = User::create($request->all());
+        return response(['data' => $user], 201);
     }
-    channel = const AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-    );
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    isFlutterLocalNotificationsInitialized = true;
-  }
 
-  void showFlutterNotification(RemoteMessage message) {
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
-    if (notification != null && android != null && !kIsWeb) {
-      flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channel.id,
-            channel.name,
-            channelDescription: channel.description,
-            icon: 'launch_background',
-          ),
-        ),
-      );
+    public function show(User $user)
+    {
+        return response(['data' => $user], 200);
     }
-  }
-}
-9. Tambahkan kode ini di main.dart
-if (await Permission.notification.request().isGranted) {
-  await NotificationService().initNotifications();
-  await NotificationService().getToken();
-}
-Seharusnya akan terlihat seperti ini:
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  //---
-  await NotificationService().initNotifications();
-  await NotificationService().getToken();
-  //---
-  runApp(const MyApp());
-}
-10. Jalankan Aplikasi, maka kamu dapat melihat fcm token yang muncul di console. Copy FCM token itu untuk mencoba notification-nya nanti.
-Test Notification melalui menu Messaging pada Firebase Console
-Masuk ke Firebase Console
-Klik Messaging, dan klik Create your first campaign
 
-Pilih Firebase Notifications Messages
+    public function update(Request $request, User $user)
+    {
+        $user->update($request->all());
+        return response(['data' => $user], 200);
+    }
 
-3. Pilih Notifications
-4. Isi Notifications title dan Notifications text, dan klik Send test message
-5. Tambahkan FCM Token yang kamu dapatkan di Flutter dan klik icon plus. Lalu klik tombol Test
-6. Sampai disini, seharusnya notifikasinya akan muncul di devicemu.
-Contoh:
-Jika tidak muncul, berarti ada tahapan yang kamu lewatkan,
-Pastikan semua tahapannya sudah benar!
-Masalah Umum Notifications
-Notifications muncul double
-Dugaan saat ini, ini muncul jika kamu menggunakan Emulator.
-Tidak perlu ada perbaikan khusus, cukup menjalankan project Flutter-nya di Real Device.
-Menggunakan Real Device adalah best practices jika kamu masih belajar menggunakan Flutter.
-Sepengalaman saya, banyak masalah yang mungkin kamu alami selama menggunakan emulator. Daripada kamu mengatasi masalah itu dan menghabiskan waktu karenanya, mari kita gunakan real device saja.
-Dan jika ingin di mirror, bisa menggunakan Vysor atau scrcpy
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return response(['data' => 'User deleted'], 200);
+    }
+}
+```
+
+**6. Membuat AuthController**
+```bash
+php artisan make:controller AuthController
+```
+Buka `app/Http/Controllers/AuthController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        if (Auth::attempt($request->only('email', 'password'))) {
+            $user = Auth::user();
+            $token = $user->createToken('authToken')->plainTextToken;
+            return response(['data' => ['user' => $user, 'token' => $token]], 200);
+        }
+        return response(['data' => 'Invalid credentials'], 401);
+    }
+
+    public function logout()
+    {
+        Auth::user()->currentAccessToken()->delete();
+        return response(['data' => 'Logged out successfully'], 200);
+    }
+}
+```
+
+**7. Daftarkan ke routes/api.php**
+```php
+// routes/api.php
+
+Route::post('api/auth/login', [AuthController::class, 'login']);
+Route::post('api/auth/logout', [AuthController::class, 'logout']);
+Route::apiResource('users', UserController::class);
+```
+
+**8. Migrations untuk Products**
+```bash
+php artisan make:migration create_products_table
+```
+Buka file migrasi di `database/migrations/`:
+```php
+public function up()
+{
+    Schema::create('products', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->double('price');
+        $table->timestamps();
+    });
+}
+```
+Lakukan migrasi:
+```bash
+php artisan migrate
+```
+
+**9. Membuat Model untuk Products**
+```bash
+php artisan make:model Product
+```
+
+**10. Membuat CRUD Products di ProductController**
+```bash
+php artisan make:controller ProductController
+```
+Buka `app/Http/Controllers/ProductController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Product;
+
+class ProductController extends Controller
+{
+    public function index(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'asc');
+        $limit = $request->input('limit', 10);
+
+        $products = Product::when($search, function ($query, $search) {
+            return $query->where('name', 'like', "%$search%");
+        })->orderBy($sort, $order)->paginate($limit);
+
+        return response(['data' => $products], 200);
+    }
+
+    public function store(Request $request)
+    {
+        $product = Product::create($request->all());
+        return response(['data' => $product], 201);
+    }
+
+    public function show(Product $product)
+    {
+        return response(['data' => $product], 200);
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $product->update($request->all());
+        return response(['data' => $product], 200);
+    }
+
+    public function destroy(Product $product)
+    {
+        $product->delete();
+        return response(['data' => 'Product deleted'], 200);
+    }
+}
+```
+
+**11. Daftarkan ProductController di routes/api.php**
+```php
+// routes
+
+/api.php
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('products', ProductController::class);
+});
+```
+
+**12. Seeder untuk Users**
+```bash
+php artisan make:seeder UserSeeder
+```
+Buka `database/seeders/UserSeeder.php`:
+```php
+<?php
+
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use Faker\Factory as Faker;
+
+class UserSeeder extends Seeder
+{
+    public function run()
+    {
+        $faker = Faker::create();
+
+        foreach (range(1, 10) as $index) {
+            User::create([
+                'name' => $faker->name,
+                'email' => $faker->email,
+                'password' => bcrypt('password'),
+                'role' => 'admin'
+            ]);
+        }
+    }
+}
+```
+
+**13. Seeder untuk Products**
+```bash
+php artisan make:seeder ProductSeeder
+```
+Buka `database/seeders/ProductSeeder.php`:
+```php
+<?php
+
+use Illuminate\Database\Seeder;
+use App\Models\Product;
+use Faker\Factory as Faker;
+
+class ProductSeeder extends Seeder
+{
+    public function run()
+    {
+        $faker = Faker::create();
+
+        foreach (range(1, 50) as $index) {
+            Product::create([
+                'name' => $faker->productName,
+                'price' => $faker->randomFloat(2, 10, 1000)
+            ]);
+        }
+    }
+}
+```
+
+**14. Menjalankan Seeder**
+```bash
+php artisan db:seed --class=UserSeeder
+php artisan db:seed --class=ProductSeeder
+```
+
+Dengan mengikuti tutorial di atas, Anda telah berhasil membuat CRUD API untuk Users dan Products di Laravel dengan proteksi Sanctum dan penggunaan Faker untuk seeding data. Selamat mencoba!
